@@ -1,5 +1,11 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.core.exceptions import ValidationError
 from django.db import models
+
+from .utils import generate_verification_code
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class UserManager(BaseUserManager):
@@ -31,7 +37,7 @@ class UserManager(BaseUserManager):
             password=password,
         )
         user.is_admin = True
-        user.is_active = True
+        user.is_verified = True
         user.save(using=self._db)
         return user
 
@@ -39,7 +45,8 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser):
     username = models.CharField(max_length=20, unique=True, primary_key=True)
     email = models.EmailField(verbose_name='Email Address', max_length=60, unique=True)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True) # used by django internally
+    is_verified = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 
@@ -74,15 +81,34 @@ class User(AbstractBaseUser):
         """
         return self.is_admin
 
+    def verify(self, verification_code):
+        if not self.is_verified:
+            return self.verification.verify_user(verification_code)
+        raise ValidationError('User already Verified')
+
+    def refresh_verification(self):
+        if not self.is_verified:
+            return self.verification.refresh()
+        raise ValidationError('User already Verified')
+
 
 class Verification(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     code = models.CharField(max_length=6)
 
-    def verify_user(self):
-        self.user.is_active = True
-        self.user.save()
-        self.delete()
+    def verify_user(self, code):
+        if code == self.code:
+            self.user.is_verified = True
+            self.user.save()
+            logger.info(f'Activating the user {self.user.username}')
+            self.delete()
+        else:
+            raise ValidationError('Incorrect Activation Code')
+
+    def refresh(self):
+        self.code = generate_verification_code()
+        logger.info(f'Refreshed Verification Token for {self.user.username}')
+        self.save()
 
     def __str__(self):
         return self.user.username
