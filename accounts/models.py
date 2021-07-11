@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, username, email, password):
+    def create_user(self, username, email, password, is_verified=False):
         """
         Creates and saves a User with the given email, date of
         birth and password.
@@ -20,6 +20,7 @@ class UserManager(BaseUserManager):
         user = self.model(
             username=username,
             email=self.normalize_email(email),
+            is_verified=is_verified
         )
 
         user.set_password(password)
@@ -35,9 +36,9 @@ class UserManager(BaseUserManager):
             username=username,
             email=email,
             password=password,
+            is_verified=True
         )
         user.is_admin = True
-        user.is_verified = True
         user.save(using=self._db)
         return user
 
@@ -81,6 +82,12 @@ class User(AbstractBaseUser):
         """
         return self.is_admin
 
+    def change_password(self, new_password):
+        self.passwordutils.change_password(new_password)
+
+    def forgot_password(self):
+        self.passwordutils.set_forgot_password()
+
     def verify(self, verification_code):
         if not self.is_verified:
             return self.verification.verify_user(verification_code)
@@ -109,6 +116,39 @@ class Verification(models.Model):
         self.code = generate_verification_code()
         logger.info(f'Refreshed Verification Token for {self.user.username}')
         self.save()
+
+    def __str__(self):
+        return self.user.username
+
+
+class PasswordUtils(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    forgot_password = models.BooleanField(default=False)
+    forgot_password_code = models.CharField(max_length=12)
+
+    class Meta:
+        verbose_name = 'Password Utils'
+        verbose_name_plural = 'Password Utils'
+
+    def set_forgot_password(self):
+        self.forgot_password = True
+        self.forgot_password_code = generate_verification_code(12)
+        self.save()
+
+    def change_password_anonymous(self, new_password):
+        if not self.forgot_password:
+            raise ValidationError('BAD REQUEST')
+
+        self.forgot_password = False
+        self.forgot_password_code = ''
+        self.change_password(new_password)
+        self.save()
+
+    def change_password(self, new_password):
+        if self.user.check_password(new_password):
+            raise ValidationError('New Password cannot be the same as old password')
+        self.user.set_password(new_password)
+        self.user.save()
 
     def __str__(self):
         return self.user.username

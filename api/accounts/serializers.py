@@ -6,12 +6,35 @@ from accounts.models import User
 class VerifySerializer(Serializer):
     code = CharField(max_length=6)
 
-    class Meta:
-        fields = ('code',)
 
+class ForgotPasswordSerializer(Serializer):
+    username = CharField(max_length=50)
+
+
+class ChangePasswordAnonymousSerializer(Serializer):
+    code = CharField(max_length=12)
+    new_password = CharField(max_length=30)
+
+    class Meta:
+        fields = '__all__'
         extra_kwargs = {
-            'code': {
-                'write_only': True
+            'new_password': {
+                'style': {
+                    'input_type': 'password'
+                }
+            }
+        }
+
+
+class ChangePasswordSerializer(Serializer):
+    new_password = CharField(max_length=30)
+
+    class Meta:
+        extra_kwargs = {
+            'new_password': {
+                'style': {
+                    'input_type': 'password'
+                }
             }
         }
 
