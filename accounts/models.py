@@ -2,7 +2,7 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from .utils import generate_verification_code
+from .utils import generate_verification_code, send_forgot_password_mail
 
 import logging
 logger = logging.getLogger(__name__)
@@ -134,6 +134,7 @@ class PasswordUtils(models.Model):
         self.forgot_password = True
         self.forgot_password_code = generate_verification_code(12)
         self.save()
+        send_forgot_password_mail(self.user.username, self.forgot_password_code, self.user.email)
 
     def change_password_anonymous(self, new_password):
         if not self.forgot_password:

@@ -9,7 +9,16 @@ class Mailer:
     Send email messages helper class
     """
 
-    def __init__(self, from_email=None):
+    instances = {}
+
+    @classmethod
+    def get_instance(cls, from_email=settings.DEFAULT_FROM_EMAIL):
+        if from_email in cls.instances:
+            return cls.instances[from_email]
+        cls.instances[from_email] = cls(from_email)
+        return cls.instances[from_email]
+
+    def __init__(self, from_email):
         self.connection = mail.get_connection()
         self.from_email = from_email
 
