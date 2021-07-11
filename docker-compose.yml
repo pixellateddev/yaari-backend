@@ -9,6 +9,13 @@ services:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
+  rabbitmq:
+    image: rabbitmq
+#    environment:
+#      - RABBITMQ_DEFAULT_USER=${DB_NAME}
+#      - RABBITMQ_DEFAULT_PASS=${DB_PASSWORD}
+    ports:
+      - "5672:5672"
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
@@ -18,7 +25,25 @@ services:
       - DB_NAME
       - DB_USER
       - DB_PASSWORD
+      - EMAIL_HOST_USER
+      - EMAIL_HOST_PASSWORD
     ports:
       - "8000:8000"
     depends_on:
       - db
+      - rabbitmq
+  celery:
+    restart: always
+    build: .
+    command: celery -A app worker -l info
+    volumes:
+      - .:/code
+    environment:
+      - DB_HOST=db
+      - DB_NAME
+      - DB_USER
+      - DB_PASS=${DB_PASSWORD}
+    depends_on:
+      - db
+      - rabbitmq
+      - web
