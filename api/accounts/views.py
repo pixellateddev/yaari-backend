@@ -40,9 +40,10 @@ class UserViewSet(ModelViewSet):
         return serializer
 
     def get_permissions(self, *args, **kwargs):
-        permissions = self.action_to_permission_mapping(
+        permissions = self.action_to_permission_mapping.get(
             self.action, super(UserViewSet, self).get_permissions(*args, **kwargs)
         )
+        return permissions
 
     def get_object(self):
         pk = self.kwargs.get('pk')
