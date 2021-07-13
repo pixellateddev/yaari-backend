@@ -2,10 +2,10 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
-from rest_framework.serializers import Serializer
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from accounts.models import User, PasswordUtils
+from api.serializers import EmptySerializer
 
 from .serializers import (
     UserSerializer,
@@ -17,6 +17,11 @@ from .serializers import (
 
 
 class UserViewSet(ModelViewSet):
+    """
+    retrieve:
+    Return a single user instance based on the username, if you want to retrieve the current authenticated user.
+    Just pass 'me' in the 'username'
+    """
     serializer_class = UserSerializer
     queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
@@ -24,8 +29,8 @@ class UserViewSet(ModelViewSet):
         'forgot_password': ForgotPasswordSerializer,
         'change_password': ChangePasswordSerializer,
         'change_password_anonymous': ChangePasswordAnonymousSerializer,
-        'verify_user': VerifySerializer,
-        'refresh_verification': Serializer
+        'verify': VerifySerializer,
+        'refresh_verification': EmptySerializer
     }
 
     action_to_permission_mapping = {
@@ -52,7 +57,7 @@ class UserViewSet(ModelViewSet):
         return super(UserViewSet, self).get_object()
 
     @action(detail=False, methods=['PUT'])
-    def verify_user(self, request):
+    def verify(self, request):
         code = request.data['code']
         try:
             request.user.verify(code)
@@ -95,12 +100,14 @@ class UserViewSet(ModelViewSet):
 
     @action(detail=False, methods=['PUT'])
     def forgot_password(self, request):
-        username = request.data['username']
-        if '@' in username:
-            user = get_object_or_404(User, email=username)
+        """
+        This will generate the forgot password code and send an email to the user.
+        """
+        username_or_email = request.data['username_or_email']
+        if '@' in username_or_email:
+            user = get_object_or_404(User, email=username_or_email)
         else:
-            user = get_object_or_404(User, username=username)
-
+            user = get_object_or_404(User, username=username_or_email)
         user.forgot_password()
         return Response({'status': 'OK'})
 

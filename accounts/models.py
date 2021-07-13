@@ -44,10 +44,10 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
-    username = models.CharField(max_length=20, unique=True, primary_key=True)
+    username = models.CharField(max_length=20, unique=True, primary_key=True,)
     email = models.EmailField(verbose_name='Email Address', max_length=60, unique=True)
     is_active = models.BooleanField(default=True) # used by django internally
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False, help_text='Boolean flag states whether the user is verified or not')
     is_admin = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 

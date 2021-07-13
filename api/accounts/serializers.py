@@ -8,7 +8,7 @@ class VerifySerializer(Serializer):
 
 
 class ForgotPasswordSerializer(Serializer):
-    username = CharField(max_length=50)
+    username_or_email = CharField(max_length=50, help_text='Username or Email of the user')
 
 
 class ChangePasswordAnonymousSerializer(Serializer):
