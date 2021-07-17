@@ -4,7 +4,7 @@ services:
   db:
     image: postgres
     volumes:
-      - ./private/data/db:/var/lib/postgresql/data
+      - ./database/db:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
@@ -16,11 +16,12 @@ services:
 #      - RABBITMQ_DEFAULT_PASS=${DB_PASSWORD}
     ports:
       - "5672:5672"
-  web:
+  yaari-rest:
     build: .
+    working_dir: /yaari/src
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/code
+      - .:/yaari
     environment:
       - DB_NAME
       - DB_USER
@@ -35,9 +36,10 @@ services:
   celery:
     restart: always
     build: .
+    working_dir: /yaari/src
     command: celery -A app worker -l info
     volumes:
-      - .:/code
+      - .:/yaari
     environment:
       - DB_HOST=db
       - DB_NAME
@@ -46,4 +48,4 @@ services:
     depends_on:
       - db
       - rabbitmq
-      - web
+      - yaari-rest
