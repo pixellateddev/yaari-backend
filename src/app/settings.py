@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'djcelery_email',
 
     # local
-    'accounts'
+    'accounts',
+    'profiles',
 ]
 
 MIDDLEWARE = [

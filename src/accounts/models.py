@@ -60,6 +60,10 @@ class User(AbstractBaseUser):
     def id(self):
         return self.pk
 
+    @property
+    def alias(self):
+        return self.profile.full_name if hasattr(self, 'profile') else self.username
+
     def has_perm(self, perm, obj=None):
         """
         Does the user have a specific permission?
